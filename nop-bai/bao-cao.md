@@ -47,15 +47,9 @@ Tập dữ liệu Adult có phân bố lớp mất cân bằng nghiêm trọng: 
 
 |                                  | f1_score | accuracy |
 | -------------------------------- | -------- | -------- |
-| Bước 2 (chỉ`train_batch1`)  | ___      | ___      |
-| Bước 3 (thêm`train_batch2`) | ___      | ___      |
+| Bước 2 (chỉ `train_batch1`)  | 0.7156   | 0.8760   |
+| Bước 3 (thêm `train_batch2`) | 0.7248   | 0.8800   |
 
-**Nhận xét:** ___
-
-<!-- Cần cập nhật sau khi hoàn thành Bước 2 và Bước 3 -->
-
----
-
-## 5. Phần Bonus Đã Thực Hiện (nếu có)
-
-<!-- Xóa cả mục 5 nếu không làm bonus -->
+**Nhận xét:** Khi tăng dữ liệu huấn luyện từ 22.361 lên 44.722 mẫu, F1 tăng 0.0092 và
+accuracy tăng 0.0040. Hai batch được lấy ngẫu nhiên từ cùng nguồn nên có phân phối tương tự;
+mức tăng nhỏ này là hợp lý và không nên hiểu rằng thêm dữ liệu luôn làm chỉ số tăng.
