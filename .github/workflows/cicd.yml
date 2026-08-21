@@ -59,15 +59,15 @@ jobs:
 
       - name: Authenticate to Cloud Storage
         # TODO 2: Ghi noi dung credentials ra file tam va set bien moi truong xac thuc.
-        # GCP:   echo '${{ secrets.STORAGE_CREDENTIALS }}' > /tmp/sa-key.json
-        #        echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
+        # GCP:   Ghi key tai root workspace de khop voi credentialpath trong .dvc/config.
+        #        File nay da nam trong .gitignore va chi ton tai trong runner.
         # AWS:   echo "AWS_ACCESS_KEY_ID=..." >> $GITHUB_ENV  (lay tu secrets)
         #        echo "AWS_SECRET_ACCESS_KEY=..." >> $GITHUB_ENV
         # Azure: echo "AZURE_STORAGE_CONNECTION_STRING=..." >> $GITHUB_ENV
         run: |
-          echo '${{ secrets.STORAGE_CREDENTIALS }}' > /tmp/sa-key.json
-          gcloud auth activate-service-account --key-file=/tmp/sa-key.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
+          echo '${{ secrets.STORAGE_CREDENTIALS }}' > sa-key.json
+          gcloud auth activate-service-account --key-file=sa-key.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/sa-key.json" >> $GITHUB_ENV
 
       - name: Pull data with DVC
         # TODO 3: Pull cac file du lieu can thiet tu cloud storage bang lenh dvc pull.
@@ -93,6 +93,8 @@ jobs:
         # TODO 5: Su dung cloud SDK de upload models/model.joblib len
         #         <bucket>/artifacts/current/model.joblib.
         #         Ten bucket lay tu secret ARTIFACT_BUCKET.
+        env:
+          ARTIFACT_BUCKET: ${{ secrets.ARTIFACT_BUCKET }}
         run: |
           python - <<'PYEOF'
           import os
