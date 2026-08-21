@@ -1,55 +1,48 @@
 # Báo Cáo Lab Day 21 - CI/CD cho AI Systems
 
-|              |                                                                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Họ và tên | Điền Mạnh Hùng                                                                                                             |
-| MSSV         | 2A202601888                                                                                                                    |
-| Lớp / Khóa | K3B                                                                                                                            |
-| Repo GitHub  | [github.com/Hungdn05/TRACK2_Day21_2A202601888_DienManhHung](https://github.com/Hungdn05/TRACK2_Day21_2A202601888_DienManhHung)  |
-| Ngày nộp   | 2026-08-21                                                                                                                     |
+**Họ tên:** Điền Mạnh Hùng · **MSSV:** 2A202601888 · **Lớp:** K3B ·
+**Repo:** [TRACK2_Day21_2A202601888_DienManhHung](https://github.com/Hungdn05/TRACK2_Day21_2A202601888_DienManhHung) · **Ngày:** 21/08/2026
 
----
+## 1. Thực nghiệm và lựa chọn mô hình
 
-## 1. Bộ Siêu Tham Số Đã Chọn và Lý Do
+| Run | n_estimators | learning_rate | max_depth | F1 | Accuracy |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 100 | 0.10 | 3 | 0.7109 | **0.8780** |
+| 2 | 50 | 0.05 | 2 | 0.6051 | 0.8460 |
+| 3 | 200 | 0.15 | 5 | 0.7005 | 0.8700 |
+| 4 | 150 | 0.10 | 4 | **0.7156** | 0.8760 |
 
-Kết quả từ 4 lần chạy thí nghiệm trên MLflow:
+Chọn run 4 vì có F1 cao nhất và vượt gate 0.65. Run 1 có accuracy cao hơn nhưng F1 thấp
+hơn, cho thấy accuracy không đủ để chọn model trên dữ liệu lệch lớp. Chỉ 24,8% mẫu là lớp
+thu nhập cao; model luôn đoán lớp thấp vẫn đạt accuracy 0.752 nhưng F1 lớp dương bằng 0.
+Vì vậy gate dùng F1 lớp dương để cân bằng precision và recall, không dùng weighted/macro F1.
 
-| Lần chạy | n_estimators | learning_rate | max_depth | f1_score         | accuracy |
-| ---------- | ------------ | ------------- | --------- | ---------------- | -------- |
-| 1          | 100          | 0.1           | 3         | 0.7109           | 0.8780   |
-| 2          | 50           | 0.05          | 2         | 0.6051           | 0.8460   |
-| 3          | 200          | 0.15          | 5         | 0.7005           | 0.8700   |
-| 4          | 150          | 0.1           | 4         | **0.7156** | 0.8760   |
+## 2. Khó khăn và kết quả huấn luyện liên tục
 
-**Bộ siêu tham số đã chọn:** `n_estimators=150`, `learning_rate=0.1`, `max_depth=4`.
+| Khó khăn | Cách xử lý |
+|---|---|
+| Dependency từng lệch giữa CI và VM | Khóa `scikit-learn==1.7.2`, đồng nhất nơi train/serve |
+| Credential DVC và bucket artifact khác cơ chế | Dùng secret riêng, credential chỉ tồn tại trên runner/VM |
+| Model kém có thể ghi đè production trước gate | Upload candidate; chỉ promote sau minimum gate và regression gate |
 
-**Lý do:** Bộ tham số này đạt F1 score cao nhất (0.7156) trong 4 lần thí nghiệm, vượt ngưỡng 0.65 của lab. Quan sát thấy accuracy cao nhất (0.8780) lại ở thí nghiệm 1 với F1 = 0.7109, trong khi thí nghiệm 4 có F1 cao hơn nhưng accuracy thấp hơn. Điều này chứng minh accuracy không phản ánh đúng chất lượng mô hình phân loại trên dữ liệu mất cân bằng. Giữa n_estimators và learning_rate có quan hệ đánh đổi: thí nghiệm 2 với n_estimators=50, lr=0.05 cho F1 thấp nhất (0.6051), trong khi thí nghiệm 4 với cân bằng hơn n_estimators=150, lr=0.1 cho kết quả tốt nhất.
+| Dữ liệu train | F1 | Accuracy |
+|---|---:|---:|
+| Bước 2: 22.361 mẫu | 0.7156 | 0.8760 |
+| Bước 3: 44.722 mẫu | **0.7248** | **0.8800** |
 
----
+Thêm batch 2 làm F1 tăng 0.0092 và accuracy tăng 0.0040. Hai batch cùng nguồn và phân phối
+tương tự nên mức tăng nhỏ là hợp lý; thêm dữ liệu không bảo đảm metric luôn tăng.
 
-## 2. Vì Sao Ngưỡng Chất Lượng Đặt Trên F1 Chứ Không Phải Accuracy
+## 3. Bonus
 
-Tập dữ liệu Adult có phân bố lớp mất cân bằng nghiêm trọng: chỉ 24.8% số mẫu thuộc lớp thu nhập cao (>50K). Hệ quả là một mô hình "luôn trả lời thu nhập thấp" cho mọi đầu vào sẽ đạt accuracy = 0.752, trông có vẻ tốt nhưng thực tế hoàn toàn vô dụng vì không phát hiện được trường hợp thu nhập cao nào. F1 score của lớp dương đo khả năng cân bằng giữa precision (độ chính xác khi dự đoán dương) và recall (khả năng phát hiện tất cả trường hợp dương), phản ánh đúng chất lượng mô hình trong bài toán mất cân bằng. Không nên dùng average="weighted" hay average="macro" vì các giá trị đó bị lớp đa số kéo lên cao, che giấu việc mô hình bỏ sót phần lớn trường hợp thu nhập cao.
+| Bonus | Kết quả |
+|---|---|
+| Remote MLflow | CI nhận URI/username/token qua GitHub Secrets và ghi run lên DagsHub |
+| Decision threshold | Quét 0.10–0.90; trên dữ liệu Bước 3, F1 tăng **0.7248 → 0.7446** tại threshold **0.45** |
+| Precision/Recall | Tự sinh `detail.txt`; lớp cao đạt precision 0.8037, recall 0.6935 |
+| Chống regression | Candidate 0.7345 bị chặn khi production đạt 0.7446; production không bị ghi đè |
+| Data drift | Tỷ lệ dương 0.2478, lệch 0.0002 so với 0.248; cảnh báo nếu lệch trên 0.05 |
 
----
-
-## 3. Khó Khăn Gặp Phải và Cách Giải Quyết
-
-| Khó khăn                                                                                                | Nguyên nhân                                                         | Cách giải quyết                                                   |
-| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Cài đặt dependencies thất bại do Python 3.14 không tương thích với phiên bản numpy cố định | requirements.txt yêu cầu numpy==2.0.0rc1 không có cho Python 3.14 | Sửa requirements.txt thành version flexible (dùng >= thay vì ==) |
-| F1 score thí nghiệm 2 thấp hơn ngưỡng 0.65                                                          | n_estimators=50 và learning_rate=0.05 quá yếu cho mô hình        | Tăng n_estimators và learning_rate để cải thiện                |
-| Quan sát thấy accuracy và F1 không tương quan tuyến tính                                          | Dữ liệu mất cân bằng 75/25 khiến accuracy gây hiểu lầm       | Tập trung theo dõi F1 score thay vì accuracy                      |
-
----
-
-## 4. So Sánh Bước 2 và Bước 3 (bắt buộc, 2 - 3 câu)
-
-|                                  | f1_score | accuracy |
-| -------------------------------- | -------- | -------- |
-| Bước 2 (chỉ `train_batch1`)  | 0.7156   | 0.8760   |
-| Bước 3 (thêm `train_batch2`) | 0.7248   | 0.8800   |
-
-**Nhận xét:** Khi tăng dữ liệu huấn luyện từ 22.361 lên 44.722 mẫu, F1 tăng 0.0092 và
-accuracy tăng 0.0040. Hai batch được lấy ngẫu nhiên từ cùng nguồn nên có phân phối tương tự;
-mức tăng nhỏ này là hợp lý và không nên hiểu rằng thêm dữ liệu luôn làm chỉ số tăng.
+Với giả định API phục vụ chiến dịch ưu đãi cao cấp, false positive làm lãng phí chi phí tiếp
+cận nên precision thấp tốn kém hơn; recall vẫn cần theo dõi để không bỏ sót quá nhiều khách
+hàng phù hợp. `detail.txt` báo cáo cả hai thay vì tối ưu một chỉ số đơn lẻ.

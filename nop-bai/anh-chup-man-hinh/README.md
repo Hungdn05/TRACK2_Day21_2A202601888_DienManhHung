@@ -95,3 +95,6 @@ trong `bao-cao.md`. Ví dụ:
 
 - `06-dagshub-mlflow.png` — Bonus 1: MLflow trên DagsHub.
 - `07-quality-gate-chan.png` — quality gate chặn Release khi `f1_score < 0.65`.
+- `08-bonus-train-log.png` — F1 mặc định/tối ưu, threshold và kết quả data drift trong log Train.
+- `09-regression-gate-chan.png` — model mới vượt 0.65 nhưng thấp hơn production nên Release bị chặn.
+- `10-bonus-artifacts.png` — artifact có cả `report.json` và `detail.txt`.
