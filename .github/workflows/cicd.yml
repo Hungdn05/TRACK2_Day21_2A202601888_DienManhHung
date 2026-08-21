@@ -66,6 +66,7 @@ jobs:
         # Azure: echo "AZURE_STORAGE_CONNECTION_STRING=..." >> $GITHUB_ENV
         run: |
           echo '${{ secrets.STORAGE_CREDENTIALS }}' > /tmp/sa-key.json
+          gcloud auth activate-service-account --key-file=/tmp/sa-key.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
 
       - name: Pull data with DVC
